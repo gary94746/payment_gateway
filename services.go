@@ -27,7 +27,7 @@ func CapturePayment(ctx *gin.Context) {
 		return
 	}
 
-	_, captureErr := api.PayPal.Capture(payment.PrivateId)
+	_, captureErr := api.PaymentProcessor.Capture(payment.PrivateId)
 	if captureErr != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"message": captureErr.Error(),
@@ -48,7 +48,7 @@ func CreatePayment(ctx *gin.Context) {
 		return
 	}
 
-	payment, err := api.Stripe.Create(body)
+	payment, err := api.PaymentProcessor.Create(body)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"message": err.Error(),
@@ -81,7 +81,7 @@ func RefundPayment(ctx *gin.Context) {
 		return
 	}
 
-	refund, err := api.PayPal.Refund(order.PrivateId, body)
+	refund, err := api.PaymentProcessor.Refund(order.PrivateId, body)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"message": err.Error(),

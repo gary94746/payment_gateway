@@ -64,7 +64,6 @@ type PaymentConnector interface {
 }
 
 type Api struct {
-	Storage Storage
-	PayPal  PaymentConnector
-	Stripe  PaymentConnector
+	Storage          Storage
+	PaymentProcessor PaymentConnector
 }

@@ -30,9 +30,8 @@ func main() {
 	})
 
 	api = Api{
-		PayPal:  paypal,
-		Stripe:  stripe,
-		Storage: inMemory,
+		PaymentProcessor: stripe,
+		Storage:          inMemory,
 	}
 
 	r := gin.Default()
