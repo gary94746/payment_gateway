@@ -168,7 +168,6 @@ func (p *PayPal) Capture(id string) (bool, error) {
 func (p *PayPal) Refund(paymentId string, refund PartialRefund) (*RefundResponse, error) {
 	var payload Refund
 	payload.Amount.Value = strconv.Itoa(int(refund.Amount / 100))
-	payload.Amount.CurrencyCode = refund.Currency
 
 	jsonMarshal, err := json.Marshal(payload)
 	if err != nil {
@@ -223,9 +222,7 @@ func (p *PayPal) Refund(paymentId string, refund PartialRefund) (*RefundResponse
 	}
 
 	return &RefundResponse{
-		Id:       refundDetail.Id,
-		Amount:   payload.Amount.Value,
-		Currency: payload.Amount.CurrencyCode,
+		Id: refundDetail.Id,
 	}, nil
 }
 

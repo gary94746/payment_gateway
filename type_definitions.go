@@ -1,14 +1,12 @@
 package main
 
 type PartialRefund struct {
-	Amount   int64  `json:"amount" binding:"required,number"`
-	Currency string `json:"currency" binding:"required,iso4217"`
+	Amount int64 `json:"amount" binding:"required,number"`
 }
 
 type RefundResponse struct {
-	Id       string `json:"id" binding:"required"`
-	Amount   string `json:"amount"`
-	Currency string `json:"currency"`
+	Id     string `json:"id"`
+	Amount string `json:"amount"`
 }
 
 type LineItem struct {

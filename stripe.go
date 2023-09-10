@@ -95,33 +95,72 @@ func (s *Stripe) Create(payment Payment) (*PaymentDetail, error) {
 	}
 
 	return &PaymentDetail{
-		PrivateId:   checkout.Id,
+		PrivateId:   checkout.PaymentIntent,
 		RedirectUrl: checkout.Url,
 	}, nil
 }
 
 func (s *Stripe) Capture(id string) (bool, error) {
-	session, err := s.getSession(id)
+	intent, err := s.getPaymentIntent(id)
 	if err != nil {
 		return false, errors.New("error getting sessionId")
 	}
 
-	isPaid := session.PaymentStatus == "paid"
+	isPaid := intent.Status == "succeeded"
 	if !isPaid {
-		return false, errors.New("session is not paid")
+		return false, errors.New("payment intent is not paid")
 	}
 
 	return true, nil
 }
 
-func (Stripe) Refund(paymentId string, refund PartialRefund) (*RefundResponse, error) {
+func (s *Stripe) Refund(paymentId string, refund PartialRefund) (*RefundResponse, error) {
+	form := url.Values{}
+	form.Add("payment_intent", paymentId)
+	form.Add("amount", strconv.Itoa(int(refund.Amount)))
+
+	request, err := http.NewRequest(http.MethodPost, s.basePath+"/refunds", bytes.NewBuffer([]byte(form.Encode())))
+	if err != nil {
+		return nil, errors.New("error creating the request")
+	}
+
+	response, err := s.doRequest(request)
+	if err != nil {
+		return nil, errors.New("error requesting refund")
+	}
+
+	rawPayload, err := io.ReadAll(response.Body)
+	if err != nil {
+		return nil, errors.New("error reading the payload")
+	}
+
+	defer response.Body.Close()
+
+	isOk := response.StatusCode == http.StatusOK
+	if !isOk {
+		return nil, errors.New("response with status " + response.Status)
+	}
+
+	type CustomRefundResponse struct {
+		Id     string `json:"id"`
+		Amount int64  `json:"amount"`
+	}
+
+	var refundResponse CustomRefundResponse
+	unmarshalError := json.Unmarshal(rawPayload, &refundResponse)
+	if unmarshalError != nil {
+		s.log.Error("decoding raw payload error", "message", string(rawPayload))
+		return nil, errors.New("error parsing the response: " + unmarshalError.Error())
+	}
+
 	return &RefundResponse{
-		Id: "",
+		Id:     refundResponse.Id,
+		Amount: strconv.Itoa(int(refundResponse.Amount)),
 	}, nil
 }
 
-func (s *Stripe) getSession(sessionId string) (*SessionResponse, error) {
-	request, err := http.NewRequest(http.MethodGet, s.basePath+"/checkout/sessions/"+sessionId, nil)
+func (s *Stripe) getPaymentIntent(intentId string) (*PaymentIntentResponse, error) {
+	request, err := http.NewRequest(http.MethodGet, s.basePath+"/payment_intents/"+intentId, nil)
 	if err != nil {
 		return nil, errors.New("error creating request")
 	}
@@ -143,7 +182,7 @@ func (s *Stripe) getSession(sessionId string) (*SessionResponse, error) {
 
 	defer response.Body.Close()
 
-	var sessionDetail SessionResponse
+	var sessionDetail PaymentIntentResponse
 	unmarshalError := json.Unmarshal(rawPayload, &sessionDetail)
 	if unmarshalError != nil {
 		s.log.Error("decoding error", "message", string(rawPayload))

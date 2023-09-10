@@ -1,10 +1,11 @@
 package main
 
 type CheckoutResponse struct {
-	Url string `json:"url"`
-	Id  string `json:"id"`
-}
-type SessionResponse struct {
+	Url           string `json:"url"`
 	Id            string `json:"id"`
-	PaymentStatus string `json:"payment_status"`
+	PaymentIntent string `json:"payment_intent"`
+}
+type PaymentIntentResponse struct {
+	Id     string `json:"id"`
+	Status string `json:"status"`
 }
