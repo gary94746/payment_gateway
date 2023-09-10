@@ -201,6 +201,7 @@ func (p *PayPal) Refund(paymentId string, refund PartialRefund) (*RefundResponse
 		p.Log.Error("error requesting refund " + paymentId)
 	}
 
+	defer response.Body.Close()
 	rawResponse, err := io.ReadAll(response.Body)
 	if err != nil {
 		p.Log.Error("Error reading body for refund: " + paymentId)
@@ -238,6 +239,8 @@ func (p *PayPal) getOrder(orderId string) (*OrderDetail, error) {
 	if err != nil {
 		p.Log.Error("error requesting refund " + orderId)
 	}
+
+	defer response.Body.Close()
 
 	rawResponse, err := io.ReadAll(response.Body)
 	if err != nil {
@@ -315,6 +318,7 @@ func (p *PayPal) requestWrapper(request http.Request) (*http.Response, error) {
 	var body []byte
 	if request.Body != nil {
 		body, _ = io.ReadAll(request.Body)
+		defer request.Body.Close()
 	}
 	bodyCopy := io.NopCloser(bytes.NewReader(body))
 
