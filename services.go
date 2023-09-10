@@ -37,7 +37,6 @@ func CapturePayment(ctx *gin.Context) {
 	}
 
 	api.Storage.updateStatus(paymentId, "CAPTURED")
-
 	ctx.JSON(http.StatusOK, gin.H{})
 }
 

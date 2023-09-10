@@ -100,7 +100,17 @@ func (s *Stripe) Create(payment Payment) (*PaymentDetail, error) {
 	}, nil
 }
 
-func (Stripe) Capture(id string) (bool, error) {
+func (s *Stripe) Capture(id string) (bool, error) {
+	session, err := s.getSession(id)
+	if err != nil {
+		return false, errors.New("error getting sessionId")
+	}
+
+	isPaid := session.PaymentStatus == "paid"
+	if !isPaid {
+		return false, errors.New("session is not paid")
+	}
+
 	return true, nil
 }
 
@@ -108,4 +118,37 @@ func (Stripe) Refund(paymentId string, refund PartialRefund) (*RefundResponse, e
 	return &RefundResponse{
 		Id: "",
 	}, nil
+}
+
+func (s *Stripe) getSession(sessionId string) (*SessionResponse, error) {
+	request, err := http.NewRequest(http.MethodGet, s.basePath+"/checkout/sessions/"+sessionId, nil)
+	if err != nil {
+		return nil, errors.New("error creating request")
+	}
+
+	response, err := s.doRequest(request)
+	if err != nil {
+		return nil, errors.New("Error requesting" + response.Status)
+	}
+
+	isOk := response.StatusCode == http.StatusOK
+	if !isOk {
+		return nil, errors.New("error getting session information " + response.Status)
+	}
+
+	rawPayload, err := io.ReadAll(response.Body)
+	if err != nil {
+		return nil, errors.New("error decoding body")
+	}
+
+	defer response.Body.Close()
+
+	var sessionDetail SessionResponse
+	unmarshalError := json.Unmarshal(rawPayload, &sessionDetail)
+	if unmarshalError != nil {
+		s.log.Error("decoding error", "message", string(rawPayload))
+		return nil, errors.New("error parsing to json")
+	}
+
+	return &sessionDetail, nil
 }
