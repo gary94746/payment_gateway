@@ -30,7 +30,7 @@ func main() {
 	})
 
 	api = Api{
-		PaymentProcessor: stripe,
+		PaymentProcessor: paypal,
 		Storage:          inMemory,
 	}
 

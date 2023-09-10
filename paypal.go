@@ -166,14 +166,6 @@ func (p *PayPal) Capture(id string) (bool, error) {
 }
 
 func (p *PayPal) Refund(paymentId string, refund PartialRefund) (*RefundResponse, error) {
-	var payload Refund
-	payload.Amount.Value = strconv.Itoa(int(refund.Amount / 100))
-
-	jsonMarshal, err := json.Marshal(payload)
-	if err != nil {
-		p.Log.Error("error on marshal refund request")
-	}
-
 	orderDetail, err := p.getOrder(paymentId)
 	if err != nil {
 		p.Log.Warn("Order querying", "orderId", paymentId)
@@ -188,6 +180,15 @@ func (p *PayPal) Refund(paymentId string, refund PartialRefund) (*RefundResponse
 	captures := purchaseUnits[0].Payments.Captures
 	if captures == nil {
 		return nil, errors.New("order not capture yet")
+	}
+
+	var payload Refund
+	payload.Amount.Value = strconv.Itoa(int(refund.Amount / 100))
+	payload.Amount.CurrencyCode = captures[0].Amount.CurrencyCode
+
+	jsonMarshal, err := json.Marshal(payload)
+	if err != nil {
+		p.Log.Error("error on marshal refund request")
 	}
 
 	request, err := http.NewRequest("POST", p.BasePath+"/v2/payments/captures/"+captures[0].ID+"/refund", bytes.NewBuffer(jsonMarshal))
@@ -222,7 +223,8 @@ func (p *PayPal) Refund(paymentId string, refund PartialRefund) (*RefundResponse
 	}
 
 	return &RefundResponse{
-		Id: refundDetail.Id,
+		Id:     refundDetail.Id,
+		Amount: captures[0].Amount.CurrencyCode,
 	}, nil
 }
 
@@ -243,7 +245,7 @@ func (p *PayPal) getOrder(orderId string) (*OrderDetail, error) {
 	if err != nil {
 		p.Log.Error("Error reading body for refund: " + orderId)
 
-		return nil, errors.New("error refunding order with status " + request.Response.Status)
+		return nil, errors.New("error refunding order with status " + response.Status)
 	}
 
 	var orderDetail OrderDetail
