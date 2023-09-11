@@ -1,4 +1,4 @@
-package main
+package processors
 
 type CheckoutResponse struct {
 	Url           string `json:"url"`

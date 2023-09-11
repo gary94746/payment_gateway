@@ -1,4 +1,4 @@
-package main
+package processors
 
 import (
 	"bytes"
@@ -17,23 +17,22 @@ import (
 
 type PayPal struct {
 	Client      *http.Client
-	T           http.RoundTripper
-	BasePath    string
-	Log         slog.Logger
+	basePath    string
+	log         slog.Logger
 	username    string
 	password    string
 	bearerToken string
 }
 
 func (p *PayPal) Init(settings PaymentSettings) error {
-	p.Log = *slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	p.log = *slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	p.username = settings.Credentials["client_id"]
-	p.BasePath = "https://api.paypal.com"
+	p.basePath = "https://api.paypal.com"
 	p.password = settings.Credentials["client_token"]
 
 	isSandbox := settings.Credentials["mode"] == "SANDBOX"
 	if isSandbox {
-		p.BasePath = "https://api.sandbox.paypal.com"
+		p.basePath = "https://api.sandbox.paypal.com"
 	}
 
 	p.Client = &http.Client{
@@ -84,22 +83,22 @@ func (p *PayPal) Create(payment Payment) (*PaymentDetail, error) {
 
 	payload, err := json.Marshal(order)
 	if err != nil {
-		p.Log.Info("Error on marshal order", err)
+		p.log.Info("Error on marshal order", err)
 	}
 
-	request, err := http.NewRequest("POST", p.BasePath+"/v2/checkout/orders", bytes.NewBuffer(payload))
+	request, err := http.NewRequest(http.MethodPost, p.basePath+"/v2/checkout/orders", bytes.NewBuffer(payload))
 	if err != nil {
-		p.Log.Info("Error on request", err)
+		p.log.Info("Error on request", err)
 	}
 
 	response, err := p.requestWrapper(*request)
 	if err != nil {
-		p.Log.Info("Do request err", err)
+		p.log.Info("Do request err", err)
 	}
 
 	rawResponse, err := io.ReadAll(response.Body)
 	if err != nil {
-		p.Log.Error("Error decoding order response", rawResponse)
+		p.log.Error("Error decoding order response", rawResponse)
 		return nil, errors.New("error decoding order response")
 	}
 
@@ -107,7 +106,7 @@ func (p *PayPal) Create(payment Payment) (*PaymentDetail, error) {
 
 	isCreatedStatus := response.StatusCode == http.StatusCreated
 	if !isCreatedStatus {
-		p.Log.Error("PAYPAL_ORDER_CREATION_ERROR", "RESPONSE", string(rawResponse))
+		p.log.Error("PAYPAL_ORDER_CREATION_ERROR", "RESPONSE", string(rawResponse))
 
 		return nil, fmt.Errorf("error creating the order, detail -> %s", string(rawResponse))
 	}
@@ -115,7 +114,7 @@ func (p *PayPal) Create(payment Payment) (*PaymentDetail, error) {
 	orderResponse := &OrderResponse{}
 	dErr := json.Unmarshal([]byte(rawResponse), orderResponse)
 	if dErr != nil {
-		p.Log.Info("Decoding error", dErr)
+		p.log.Info("Decoding error", dErr)
 
 		return nil, errors.New("error decoding the order")
 	}
@@ -137,19 +136,19 @@ func (p *PayPal) Create(payment Payment) (*PaymentDetail, error) {
 }
 
 func (p *PayPal) Capture(id string) (bool, error) {
-	request, err := http.NewRequest("POST", p.BasePath+"/v2/checkout/orders/"+id+"/capture", nil)
+	request, err := http.NewRequest(http.MethodPost, p.basePath+"/v2/checkout/orders/"+id+"/capture", nil)
 	if err != nil {
-		p.Log.Error("Error on request", err)
+		p.log.Error("Error on request", err)
 	}
 
 	response, err := p.requestWrapper(*request)
 	if err != nil {
-		p.Log.Error("Do request err", err)
+		p.log.Error("Do request err", err)
 	}
 
 	rawResponse, err := io.ReadAll(response.Body)
 	if err != nil {
-		p.Log.Error("Error decoding order response", rawResponse)
+		p.log.Error("Error decoding order response", rawResponse)
 		return false, errors.New("error decoding order response")
 	}
 
@@ -157,7 +156,7 @@ func (p *PayPal) Capture(id string) (bool, error) {
 
 	isCreatedStatus := response.StatusCode == http.StatusCreated
 	if !isCreatedStatus {
-		p.Log.Error("Error capturing the order", "response", string(rawResponse), "status", response.StatusCode)
+		p.log.Error("Error capturing the order", "response", string(rawResponse), "status", response.StatusCode)
 
 		return false, errors.New("error capturing")
 	}
@@ -168,7 +167,7 @@ func (p *PayPal) Capture(id string) (bool, error) {
 func (p *PayPal) Refund(paymentId string, refund PartialRefund) (*RefundResponse, error) {
 	orderDetail, err := p.getOrder(paymentId)
 	if err != nil {
-		p.Log.Warn("Order querying", "orderId", paymentId)
+		p.log.Warn("Order querying", "orderId", paymentId)
 		return nil, errors.New("Error querying the order" + paymentId)
 	}
 
@@ -188,30 +187,30 @@ func (p *PayPal) Refund(paymentId string, refund PartialRefund) (*RefundResponse
 
 	jsonMarshal, err := json.Marshal(payload)
 	if err != nil {
-		p.Log.Error("error on marshal refund request")
+		p.log.Error("error on marshal refund request")
 	}
 
-	request, err := http.NewRequest("POST", p.BasePath+"/v2/payments/captures/"+captures[0].ID+"/refund", bytes.NewBuffer(jsonMarshal))
+	request, err := http.NewRequest(http.MethodPost, p.basePath+"/v2/payments/captures/"+captures[0].ID+"/refund", bytes.NewBuffer(jsonMarshal))
 	if err != nil {
-		p.Log.Error("error creating request for refund, " + paymentId)
+		p.log.Error("error creating request for refund, " + paymentId)
 	}
 
 	response, err := p.requestWrapper(*request)
 	if err != nil {
-		p.Log.Error("error requesting refund " + paymentId)
+		p.log.Error("error requesting refund " + paymentId)
 	}
 
 	defer response.Body.Close()
 	rawResponse, err := io.ReadAll(response.Body)
 	if err != nil {
-		p.Log.Error("Error reading body for refund: " + paymentId)
+		p.log.Error("Error reading body for refund: " + paymentId)
 
 		return nil, errors.New("error refunding order with status " + request.Response.Status)
 	}
 
 	isOk := response.StatusCode == http.StatusCreated
 	if !isOk {
-		p.Log.Error("error refunding order with status "+response.Status, "response", rawResponse)
+		p.log.Error("error refunding order with status "+response.Status, "response", rawResponse)
 		return nil, errors.New("error refunding order with status " + response.Status)
 	}
 
@@ -229,21 +228,21 @@ func (p *PayPal) Refund(paymentId string, refund PartialRefund) (*RefundResponse
 }
 
 func (p *PayPal) getOrder(orderId string) (*OrderDetail, error) {
-	request, err := http.NewRequest("GET", p.BasePath+"/v2/checkout/orders/"+orderId, nil)
+	request, err := http.NewRequest(http.MethodGet, p.basePath+"/v2/checkout/orders/"+orderId, nil)
 	if err != nil {
-		p.Log.Error("error creating request for refund, " + orderId)
+		p.log.Error("error creating request for refund, " + orderId)
 	}
 
 	response, err := p.requestWrapper(*request)
 	if err != nil {
-		p.Log.Error("error requesting refund " + orderId)
+		p.log.Error("error requesting refund " + orderId)
 	}
 
 	defer response.Body.Close()
 
 	rawResponse, err := io.ReadAll(response.Body)
 	if err != nil {
-		p.Log.Error("Error reading body for refund: " + orderId)
+		p.log.Error("Error reading body for refund: " + orderId)
 
 		return nil, errors.New("error refunding order with status " + response.Status)
 	}
@@ -261,9 +260,9 @@ func (p *PayPal) getOrder(orderId string) (*OrderDetail, error) {
 
 func (p *PayPal) getToken() (*string, error) {
 	payload := strings.NewReader("grant_type=client_credentials")
-	req, err := http.NewRequest("POST", p.BasePath+"/v1/oauth2/token", payload)
+	req, err := http.NewRequest(http.MethodPost, p.basePath+"/v1/oauth2/token", payload)
 	if err != nil {
-		p.Log.Error("error creating the request", "detail", err)
+		p.log.Error("error creating the request", "detail", err)
 		return nil, errors.New("error creating the request")
 	}
 
@@ -272,26 +271,26 @@ func (p *PayPal) getToken() (*string, error) {
 
 	response, err := p.Client.Do(req)
 	if err != nil {
-		p.Log.Error("error on request", "detail", err)
+		p.log.Error("error on request", "detail", err)
 		return nil, errors.New("error on request")
 	}
 
 	rawResponse, err := io.ReadAll(response.Body)
 	if err != nil {
-		p.Log.Error("error on decoding", "detail", err)
+		p.log.Error("error on decoding", "detail", err)
 		return nil, errors.New("error on decoding")
 	}
 
 	isOk := response.StatusCode == 200
 	if !isOk {
-		p.Log.Error("Error getting the auth token", "detail", rawResponse)
+		p.log.Error("Error getting the auth token", "detail", rawResponse)
 		return nil, errors.New("error getting the auth token")
 	}
 
 	var tokenResponse TokenResponse
 	unmarshalErr := json.Unmarshal(rawResponse, &tokenResponse)
 	if unmarshalErr != nil {
-		p.Log.Error("error unmarshal", "detail", unmarshalErr)
+		p.log.Error("error unmarshal", "detail", unmarshalErr)
 	}
 
 	return &tokenResponse.AccessToken, nil
@@ -302,7 +301,7 @@ func (p *PayPal) retryRequest(request http.Request) (*http.Response, error) {
 
 	response, err := p.Client.Do(&request)
 	if err != nil {
-		p.Log.Error("RETRY_REQUEST", "message", err)
+		p.log.Error("RETRY_REQUEST", "message", err)
 
 		return nil, errors.New("RETRY_REQUEST fails")
 	}

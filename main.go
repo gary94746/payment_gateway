@@ -5,6 +5,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	"payment-processor.gary94746/main/lib/database"
+	"payment-processor.gary94746/main/lib/processors"
 )
 
 var api Api
@@ -12,16 +14,16 @@ var api Api
 func main() {
 	godotenv.Load()
 
-	paypal := &PayPal{}
-	stripe := &Stripe{}
-	inMemory := InMemory{}
+	paypal := &processors.PayPal{}
+	stripe := &processors.Stripe{}
+	inMemory := database.InMemory{}
 
-	stripe.Init(PaymentSettings{
+	stripe.Init(processors.PaymentSettings{
 		Credentials: map[string]string{
 			"token": os.Getenv("STRIPE_TOKEN"),
 		},
 	})
-	paypal.Init(PaymentSettings{
+	paypal.Init(processors.PaymentSettings{
 		Credentials: map[string]string{
 			"client_id":    os.Getenv("PAYPAL_CLIENT_ID"),
 			"client_token": os.Getenv("PAYPAL_CLIENT_TOKEN"),
