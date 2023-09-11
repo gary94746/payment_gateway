@@ -28,7 +28,7 @@ func (s *Services) CreatePayment(payment processors.Payment) (*processors.Paymen
 		Status:      processors.StatusCreated,
 		RedirectUrl: payment.RedirectUrl,
 		CancelUrl:   payment.CancelUrl,
-		PrivateId:   payment.PrivateId,
+		PrivateId:   paymentCreation.PrivateId,
 		Id:          payment.Id,
 		Reference:   payment.Reference,
 		LineItems:   items,

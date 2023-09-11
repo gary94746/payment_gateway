@@ -1,4 +1,4 @@
-package main
+package rest
 
 import (
 	"net/http"
@@ -7,7 +7,7 @@ import (
 	"payment-processor.gary94746/main/lib/processors"
 )
 
-func GetPayment(ctx *gin.Context) {
+func (api ApiRest) getPayment(ctx *gin.Context) {
 	paymentId := ctx.Param("id")
 	payment, err := api.services.GetPayment(paymentId)
 	if err != nil {
@@ -17,7 +17,7 @@ func GetPayment(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, payment)
 }
 
-func CapturePayment(ctx *gin.Context) {
+func (api ApiRest) capturePayment(ctx *gin.Context) {
 	paymentId := ctx.Param("id")
 
 	errors := api.services.CapturePayment(paymentId)
@@ -31,7 +31,7 @@ func CapturePayment(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{})
 }
 
-func CreatePayment(ctx *gin.Context) {
+func (api ApiRest) createPayment(ctx *gin.Context) {
 	var body processors.Payment
 	if err := ctx.ShouldBindJSON(&body); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -48,7 +48,7 @@ func CreatePayment(ctx *gin.Context) {
 	})
 }
 
-func RefundPayment(ctx *gin.Context) {
+func (api ApiRest) refundPayment(ctx *gin.Context) {
 	var body processors.PartialRefund
 	if err := ctx.ShouldBindJSON(&body); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
