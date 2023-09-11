@@ -5,9 +5,15 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	"payment-processor.gary94746/main/app/services"
 	"payment-processor.gary94746/main/lib/database"
 	"payment-processor.gary94746/main/lib/processors"
 )
+
+type Api struct {
+	database database.Database
+	services services.Services
+}
 
 var api Api
 
@@ -32,8 +38,11 @@ func main() {
 	})
 
 	api = Api{
-		PaymentProcessor: paypal,
-		Storage:          inMemory,
+		database: inMemory,
+		services: services.Services{
+			Database:         inMemory,
+			PaymentProcessor: paypal,
+		},
 	}
 
 	r := gin.Default()

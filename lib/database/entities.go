@@ -35,7 +35,7 @@ type Payment struct {
 	Id          string           `json:"id" binding:"-"`
 }
 
-type Storage interface {
+type Database interface {
 	Save(payment Payment) string
 	FindById(id string) (*Payment, error)
 	UpdateStatus(id string, status string) error
