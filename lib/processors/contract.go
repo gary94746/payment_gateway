@@ -7,7 +7,7 @@ const (
 )
 
 type PartialRefund struct {
-	Amount int64 `json:"amount" binding:"required,number"`
+	Amount int64 `json:"amount" `
 }
 
 type RefundResponse struct {
@@ -16,29 +16,21 @@ type RefundResponse struct {
 }
 
 type LineItem struct {
-	Name     string `json:"name" binding:"required,min=1,max=400"`
-	Amount   int64  `json:"amount" binding:"required,number,min=1000"`
-	Quantity int32  `json:"quantity" binding:"required,number,min=1"`
-}
-
-type Customer struct {
-	Name     string `json:"name" binding:"required,min=2,max=300"`
-	LastName string `json:"lastName" binding:"required,min=2,max=300"`
-	Email    string `json:"email" binding:"required,email,min=2,max=300"`
+	Name     string `json:"name"`
+	Amount   int64  `json:"amount"`
+	Quantity int32  `json:"quantity"`
 }
 
 type Payment struct {
-	Currency    string           `json:"currency" binding:"required,iso4217"`
-	Amount      int64            `json:"amount" binding:"required,number,min=1000"`
-	Status      string           `json:"status" binding:"-"`
-	RedirectUrl string           `json:"redirectUrl" binding:"required,url"`
-	CancelUrl   string           `json:"cancelUrl" binding:"required,url"`
-	PrivateId   string           `json:"privateId" binding:"-"`
-	Reference   string           `json:"reference" binding:"required,min=1,max=10"`
-	LineItems   []LineItem       `json:"lineItems" binding:"required,gt=0,dive,lt=200,dive"`
+	Currency    string           `json:"currency"`
+	Amount      int64            `json:"amount"`
+	Status      string           `json:"status"`
+	RedirectUrl string           `json:"redirectUrl"`
+	CancelUrl   string           `json:"cancelUrl"`
+	PrivateId   string           `json:"privateId"`
+	LineItems   []LineItem       `json:"lineItems"`
 	Refunds     []RefundResponse `json:"refunds"`
-	Customer    Customer         `json:"customer" binding:"required,dive"`
-	Id          string           `json:"id" binding:"-"`
+	Id          string           `json:"id"`
 }
 
 type Storage interface {

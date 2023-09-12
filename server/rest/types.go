@@ -1,4 +1,4 @@
-package database
+package rest
 
 type PartialRefund struct {
 	Amount int64 `json:"amount" binding:"required,number"`
@@ -27,21 +27,9 @@ type Payment struct {
 	Id          string           `json:"id" binding:"-"`
 }
 
-type Database interface {
-	Save(payment Payment) string
-	FindById(id string) (*Payment, error)
-	UpdateStatus(id string, status string) error
-	AttachRefund(paymentId string, refund RefundResponse) error
-}
-
 type PaymentDetail struct {
 	Id          string `json:"id"`
 	PrivateId   string `json:"privateId"`
 	RedirectUrl string `json:"redirectUrl"`
 	Status      string `json:"status"`
-}
-
-type PaymentSettings struct {
-	Credentials map[string]string
-	Mode        string
 }

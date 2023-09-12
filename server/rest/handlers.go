@@ -32,13 +32,30 @@ func (api ApiRest) capturePayment(ctx *gin.Context) {
 }
 
 func (api ApiRest) createPayment(ctx *gin.Context) {
-	var body processors.Payment
+	var body Payment
 	if err := ctx.ShouldBindJSON(&body); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	payment, err := api.services.CreatePayment(body)
+	var items []processors.LineItem
+	for _, item := range body.LineItems {
+		items = append(items, processors.LineItem{
+			Name:     item.Name,
+			Amount:   item.Amount,
+			Quantity: item.Quantity,
+		})
+	}
+
+	paymentPayload := processors.Payment{
+		Currency:    body.Currency,
+		Amount:      body.Amount,
+		RedirectUrl: body.RedirectUrl,
+		CancelUrl:   body.CancelUrl,
+		LineItems:   items,
+	}
+
+	payment, err := api.services.CreatePayment(paymentPayload)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{})
 	}

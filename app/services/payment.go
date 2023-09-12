@@ -30,10 +30,8 @@ func (s *Services) CreatePayment(payment processors.Payment) (*processors.Paymen
 		CancelUrl:   payment.CancelUrl,
 		PrivateId:   paymentCreation.PrivateId,
 		Id:          payment.Id,
-		Reference:   payment.Reference,
 		LineItems:   items,
 		Refunds:     []database.RefundResponse{},
-		Customer:    database.Customer(payment.Customer),
 	}
 
 	paymentId := s.Database.Save(databasePayment)
