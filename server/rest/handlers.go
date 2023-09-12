@@ -66,14 +66,17 @@ func (api ApiRest) createPayment(ctx *gin.Context) {
 }
 
 func (api ApiRest) refundPayment(ctx *gin.Context) {
-	var body processors.PartialRefund
+	var body PartialRefund
 	if err := ctx.ShouldBindJSON(&body); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
+	refundPayload := processors.PartialRefund{
+		Amount: body.Amount,
+	}
 	paymentId, _ := ctx.Params.Get("id")
-	refund, err := api.services.RefundPayment(paymentId, body)
+	refund, err := api.services.RefundPayment(paymentId, refundPayload)
 
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{
