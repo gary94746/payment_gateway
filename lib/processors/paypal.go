@@ -16,7 +16,7 @@ import (
 )
 
 type PayPal struct {
-	Client      *http.Client
+	client      *http.Client
 	basePath    string
 	log         slog.Logger
 	username    string
@@ -35,7 +35,7 @@ func (p *PayPal) Init(settings PaymentSettings) error {
 		p.basePath = "https://api.sandbox.paypal.com"
 	}
 
-	p.Client = &http.Client{
+	p.client = &http.Client{
 		Timeout: 60 * time.Second,
 	}
 
@@ -269,7 +269,7 @@ func (p *PayPal) getToken() (*string, error) {
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.SetBasicAuth(p.username, p.password)
 
-	response, err := p.Client.Do(req)
+	response, err := p.client.Do(req)
 	if err != nil {
 		p.log.Error("error on request", "detail", err)
 		return nil, errors.New("error on request")
@@ -299,7 +299,7 @@ func (p *PayPal) getToken() (*string, error) {
 func (p *PayPal) retryRequest(request http.Request) (*http.Response, error) {
 	request.Header.Set("Authorization", "Bearer "+p.bearerToken)
 
-	response, err := p.Client.Do(&request)
+	response, err := p.client.Do(&request)
 	if err != nil {
 		p.log.Error("RETRY_REQUEST", "message", err)
 
@@ -321,7 +321,7 @@ func (p *PayPal) requestWrapper(request http.Request) (*http.Response, error) {
 	bodyCopy := io.NopCloser(bytes.NewReader(body))
 
 	request.Body = bodyCopy
-	firstResponse, err := p.Client.Do(&request)
+	firstResponse, err := p.client.Do(&request)
 	if err != nil {
 		log.Println("Error requesting the token")
 	}

@@ -15,7 +15,7 @@ import (
 )
 
 type Stripe struct {
-	Client   *http.Client
+	client   *http.Client
 	token    string
 	log      slog.Logger
 	basePath string
@@ -25,7 +25,7 @@ func (s *Stripe) doRequest(request *http.Request) (*http.Response, error) {
 	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	request.Header.Add("Authorization", "Bearer "+s.token)
 
-	response, err := s.Client.Do(request)
+	response, err := s.client.Do(request)
 
 	if err != nil {
 		return nil, err
@@ -39,7 +39,7 @@ func (s *Stripe) Init(settings PaymentSettings) error {
 	s.basePath = "https://api.stripe.com/v1"
 	s.token = settings.Credentials["token"]
 
-	s.Client = &http.Client{
+	s.client = &http.Client{
 		Timeout: 60 * time.Second,
 	}
 
