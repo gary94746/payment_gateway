@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"net/http"
 	"os"
 
 	"github.com/gin-gonic/gin"
@@ -45,7 +46,9 @@ func (ar ApiRest) Serve() error {
 
 	r := gin.Default()
 
-	processorV1Group := r.Group("v1/processor/payment")
+	r.GET("/api/health", health)
+
+	processorV1Group := r.Group("/api/v1/processor/payment")
 	processorV1Group.GET("/:id", api.getPayment)
 	processorV1Group.POST("/", api.createPayment)
 	processorV1Group.POST("/:id/capture", api.capturePayment)
@@ -53,4 +56,12 @@ func (ar ApiRest) Serve() error {
 
 	error := r.Run("127.0.0.1:3000")
 	return error
+}
+
+func health(ctx *gin.Context) {
+	response := struct{ success bool }{
+		success: true,
+	}
+
+	ctx.JSON(http.StatusOK, response)
 }
