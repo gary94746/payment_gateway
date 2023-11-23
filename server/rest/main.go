@@ -54,14 +54,10 @@ func (ar ApiRest) Serve() error {
 	processorV1Group.POST("/:id/capture", api.capturePayment)
 	processorV1Group.POST("/:id/refund", api.refundPayment)
 
-	error := r.Run("127.0.0.1:3000")
+	error := r.Run(":3001")
 	return error
 }
 
 func health(ctx *gin.Context) {
-	response := struct{ success bool }{
-		success: true,
-	}
-
-	ctx.JSON(http.StatusOK, response)
+	ctx.JSON(http.StatusOK, gin.H{"success": true})
 }
