@@ -1,6 +1,6 @@
 ## Generals
 
-PORT - 3000
+PORT - 3001
 HEALTH - /api/health
 
 ## How to run?
